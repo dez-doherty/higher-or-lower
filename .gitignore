@@ -1,5 +1,4 @@
 /app/__pycache__
 .DS_Store
-.vscode/launch.json
-.vscode/settings.json
-__pycache__/config.cpython-312.pyc
+.vscode
+__pycache__

@@ -1,5 +1,26 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Hello, {{current_user.username}}</h1>
+    <h1 class="mb-4">Hello, {{ current_user.username }}</h1>
+
+    <div class="row g-3">
+        {% for collection in collections %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">{{ collection.name }}</h5>
+                    <span class="badge bg-secondary mb-2">{{ collection.category.value }}</span>
+                    <ul class="list-unstyled mb-0">
+                        {% for choice in collection.choices %}
+                        <li class="d-flex justify-content-between">
+                            <span>{{ choice.name }}</span>
+                            <span class="text-muted">{{ choice.value }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 {% endblock %}

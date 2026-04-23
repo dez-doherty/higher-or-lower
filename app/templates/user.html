@@ -1,22 +1,46 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>User: {{ user.username }}</h1>
-    <hr>
+    <div class="card mb-4">
+        <div class="card-body d-flex align-items-center gap-3">
+            <img src="{{ user.avatar(128) }}" class="rounded" alt="avatar">
+            <div class="flex-grow-1">
+                <h1 class="h3 mb-1">{{ user.username }}</h1>
+                {% if user.last_seen %}
+                <p class="text-muted small mb-1">Last seen: {{ user.last_seen }}</p>
+                {% endif %}
+                <p class="mb-2">
+                    <strong>{{ user.followers_count() }}</strong> followers ·
+                    <strong>{{ user.following_count() }}</strong> following
+                </p>
+                {% if current_user.is_authenticated and current_user != user %}
+                    {% if current_user.is_following(user) %}
+                        <form action="{{ url_for('unfollow', username=user.username) }}" method="post">
+                            {{ form.hidden_tag() }}
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">Unfollow</button>
+                        </form>
+                    {% else %}
+                        <form action="{{ url_for('follow', username=user.username) }}" method="post">
+                            {{ form.hidden_tag() }}
+                            <button type="submit" class="btn btn-primary btn-sm">Follow</button>
+                        </form>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
 
-    <table>
-        <tr valign="top">
-            <td><img src="{{ user.avatar(128) }}"></td>
-            <td>
-                <h1>User: {{ user.username }}</h1>
-                {% if user.last_seen %}<p>Last seen on: {{ user.last_seen }}</p>{% endif %}
-            </td>
-        </tr>
-    </table>
-
-    <hr>
-    <h2>Collections</h2>
-    {% for collection in collections %}
-        {% include '_post.html' %}
-    {% endfor %}
+    <h2 class="h4 mb-3">Collections</h2>
+    <div class="row g-3">
+        {% for collection in collections %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title mb-1">{{ collection.name }}</h5>
+                    <span class="badge bg-secondary">{{ collection.category.value }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
 {% endblock %}

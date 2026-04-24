@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">Search results for "{{ q }}"</h1>
+{% if collections %}
+    {% include 'card-list.html' %}
+{% else %}
+    <p class="text-muted">No collections match your search.</p>
+{% endif %}
+{% endblock %}

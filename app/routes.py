@@ -17,13 +17,15 @@ from flask_login import logout_user
 from flask_login import login_required
 from datetime import datetime, timezone
 
-from app.forms import EmptyForm
+from flask import g
+from app.forms import SearchForm, EmptyForm
 
 @app.before_request
 def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.now(timezone.utc)
         db.session.commit()
+        g.search_form = SearchForm()
         
 @app.route('/')
 @app.route('/index')
@@ -31,7 +33,11 @@ def before_request():
 def index():
     form = CollectionForm()
     if form.validate_on_submit():
-        collection = Collection(collection_name=form.collection_name.data, creator=current_user)
+        collection = Collection(
+            name=form.collection_name.data,
+            category=CollectionCategory.sports,
+            creator=current_user,
+        )
         db.session.add(collection)
         db.session.commit()
         flash('Your collection is now live!')
@@ -39,12 +45,16 @@ def index():
     
     collections = db.session.scalars(current_user.following_collections()).all()
 
-    return render_template(
-        'index.html', 
-        title='Home', 
-        form = form,
-        collections = collections
-    )
+    page = request.args.get('page', 1, type=int)
+    collections = db.paginate(current_user.following_collections(), page=page,
+                        per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    next_url = url_for('index', page=collections.next_num) \
+    if collections.has_next else None
+    prev_url = url_for('index', page=collections.prev_num) \
+    if collections.has_prev else None
+    return render_template('index.html', title='Home', form=form,
+                           collections=collections.items, next_url=next_url,
+                           prev_url=prev_url)
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -94,10 +104,18 @@ def register():
 @login_required
 def user(username):
     user = db.first_or_404(sa.select(User).where(User.username == username))
-    query = sa.select(Collection).where(Collection.creator == user)
-    collections = db.session.scalars(query).all()
+    page = request.args.get('page', 1, type=int)
+    query = user.collections.select().order_by(Collection.timestamp.desc())
+    collections = db.paginate(query, page=page,
+                              per_page=app.config['POSTS_PER_PAGE'],
+                              error_out=False)
+    next_url = url_for('user', username=user.username, page=collections.next_num) \
+        if collections.has_next else None
+    prev_url = url_for('user', username=user.username, page=collections.prev_num) \
+        if collections.has_prev else None
     form = EmptyForm()
-    return render_template('user.html', user=user, collections=collections, form=form)
+    return render_template('user.html', user=user, collections=collections.items,
+                           next_url=next_url, prev_url=prev_url, form=form)
 
 
 
@@ -145,6 +163,32 @@ def unfollow(username):
 @app.route('/explore')
 @login_required
 def explore():
+    page = request.args.get('page', 1, type=int)
     query = sa.select(Collection).order_by(Collection.timestamp.desc())
-    collections = db.session.scalars(query).all()
-    return render_template('index.html', title='Explore', collections=collections)
+    collections = db.paginate(query, page=page,
+                              per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    next_url = url_for('explore', page=collections.next_num) \
+        if collections.has_next else None
+    prev_url = url_for('explore', page=collections.prev_num) \
+        if collections.has_prev else None
+    return render_template("index.html", title='Explore', collections=collections.items, next_url=next_url, prev_url=prev_url)
+
+@app.route('/search')
+@login_required
+def search():
+    if not g.search_form.validate():
+        return redirect(url_for('explore'))
+    page = request.args.get('page', 1, type=int)
+    q = g.search_form.q.data
+    query = sa.select(Collection).where(
+        Collection.name.ilike(f'%{q}%')
+    ).order_by(Collection.timestamp.desc())
+    collections = db.paginate(query, page=page,
+                              per_page=app.config['POSTS_PER_PAGE'], error_out=False)
+    next_url = url_for('search', q=q, page=collections.next_num) \
+        if collections.has_next else None
+    prev_url = url_for('search', q=q, page=collections.prev_num) \
+        if collections.has_prev else None
+    return render_template('search.html', title=f'Search: {q}', q=q,
+                           collections=collections.items,
+                           next_url=next_url, prev_url=prev_url)

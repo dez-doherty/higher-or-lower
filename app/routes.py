@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from app import app
 from app import db
 from app.models import User, Collection, CollectionCategory
-from app.forms import RegistrationForm
+from app.forms import RegistrationForm, CollectionForm
 
 from app.forms import LoginForm
 from flask_login import current_user, login_user
@@ -29,30 +29,20 @@ def before_request():
 @app.route('/index')
 @login_required
 def index():
-    collections = [
-        {
-            "name": "Goals",
-            "category": CollectionCategory.sports,
-            "choices": [
-                {"name": "United", "value": 8},
-                {"name": "Arsenal", "value": 7},
-                {"name": "Liverpool", "value": 6},
-            ]
-        },
-        {
-            "name": "Trophies",
-            "category": CollectionCategory.sports,
-            "choices": [
-                {"name": "United", "value": 20},
-                {"name": "Arsenal", "value": 14},
-                {"name": "Liverpool", "value": 19},
-            ]
-        },
-    ]
+    form = CollectionForm()
+    if form.validate_on_submit():
+        collection = Collection(collection_name=form.collection_name.data, creator=current_user)
+        db.session.add(collection)
+        db.session.commit()
+        flash('Your collection is now live!')
+        return redirect(url_for('index'))
+    
+    collections = db.session.scalars(current_user.following_collections()).all()
 
     return render_template(
         'index.html', 
         title='Home', 
+        form = form,
         collections = collections
     )
 
@@ -151,3 +141,10 @@ def unfollow(username):
         return redirect(url_for('user', username=username))
     else:
         return redirect(url_for('index'))
+
+@app.route('/explore')
+@login_required
+def explore():
+    query = sa.select(Collection).order_by(Collection.timestamp.desc())
+    collections = db.session.scalars(query).all()
+    return render_template('index.html', title='Explore', collections=collections)

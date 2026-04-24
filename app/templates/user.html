@@ -31,16 +31,5 @@
     </div>
 
     <h2 class="h4 mb-3">Collections</h2>
-    <div class="row g-3">
-        {% for collection in collections %}
-        <div class="col-md-6 col-lg-4">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h5 class="card-title mb-1">{{ collection.name }}</h5>
-                    <span class="badge bg-secondary">{{ collection.category.value }}</span>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
-    </div>
+    {% include 'card-list.html' %}
 {% endblock %}

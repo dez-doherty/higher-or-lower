@@ -117,7 +117,12 @@ def user(username):
     return render_template('user.html', user=user, collections=collections.items,
                            next_url=next_url, prev_url=prev_url, form=form)
 
-
+@app.route('/collection/<collection_id>')
+@login_required
+def collection(collection_id):
+    collection = db.first_or_404(sa.select(Collection).where(Collection.id == collection_id))
+    items = db.session.scalars(collection.items.select()).all()
+    return render_template('collection.html', collection=collection, items=items)
 
 @app.route('/follow/<username>', methods=['POST'])
 @login_required

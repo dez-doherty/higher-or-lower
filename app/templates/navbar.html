@@ -6,11 +6,8 @@
         </button>
 
         <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
-            <a class="navbar-brand" href="#">Higher or Lower</a>
+            <a class="navbar-brand" href="{{ url_for('index') }}">Higher or Lower</a>
             <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" href="{{ url_for('index') }}">Home</a>
-                </li>
                 {% if current_user.is_anonymous %}
                 <li class="nav-item">
                     <a class="nav-link" href="{{ url_for('login') }}">Login</a>
